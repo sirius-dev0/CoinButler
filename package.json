@@ -1,0 +1,22 @@
+{
+  "name": "coinbutler",
+  "version": "1.0.0",
+  "description": "coinbutler",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "openzeppelin-solidity": "^2.2.0",
+    "truffle": "^5.0.18",
+    "truffle-hdwallet-provider": "^1.0.9",
+    "zeppelin-solidity": "1.12.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "cst"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": []
+}
