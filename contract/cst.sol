@@ -6,9 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./cstLockable.sol";
  
 contract cst is ERC20, Ownable, LockToken {
-    
+    using SafeMath for uint256;
+
     uint8 public _decimals = 18;
-    uint256 public initialSupply = 1000000000 * (10 ** _decimals);
+    uint256 public initialSupply = 1000000000 * (10 ** uint256(_decimals));
 
     mapping(address => uint256) internal balances;
 
@@ -17,6 +18,7 @@ contract cst is ERC20, Ownable, LockToken {
     string internal constant ALREADY_LOCKED = 'Tokens already locked';
 	string internal constant NOT_LOCKED = 'No tokens locked';
 	string internal constant AMOUNT_ZERO = 'Amount can not be 0';
+    string internal constant NOT_ZERO_ADDRESS = 'CST: lock from the zero address';
 
     constructor() public ERC20("CoinButler", "CST") {
         _mint(msg.sender, initialSupply);
@@ -37,8 +39,9 @@ contract cst is ERC20, Ownable, LockToken {
     }
 
     function lock(bytes32 _reason, uint256 _amount, uint256 _time, address _of) public override onlyOwner returns (bool) {
-        uint256 validUntil = block.timestamp + _time;
+        require(_of != address(0), NOT_ZERO_ADDRESS);
 
+        uint256 validUntil = block.timestamp.add(_time);
         require(_amount <= balances[_of], NOT_ENOUGH_TOKENS); 
         require(tokensLocked(_of, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
@@ -46,8 +49,8 @@ contract cst is ERC20, Ownable, LockToken {
         if (locked[_of][_reason].amount == 0)
             lockReason[_of].push(_reason);
 
-        balances[address(this)] = balances[address(this)] + _amount;
-        balances[_of] = balances[_of] - _amount;
+        balances[address(this)] = balances[address(this)].add(_amount);
+        balances[_of] = balances[_of].sub(_amount);
 
         locked[_of][_reason] = lockToken(_amount, validUntil, false);
 
@@ -61,8 +64,9 @@ contract cst is ERC20, Ownable, LockToken {
         public onlyOwner
         returns (bool)
     {
-        uint256 validUntil = block.timestamp + _time;
-
+        require(_to != address(0), NOT_ZERO_ADDRESS);
+        
+        uint256 validUntil = block.timestamp.add(_time);
         require(tokensLocked(_to, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
 
@@ -103,7 +107,7 @@ contract cst is ERC20, Ownable, LockToken {
         amount = balanceOf(_of);
 
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
-            amount = amount + (tokensLocked(_of, lockReason[_of][i]));
+            amount = amount.add((tokensLocked(_of, lockReason[_of][i])));
         }   
     }    
 
@@ -113,7 +117,7 @@ contract cst is ERC20, Ownable, LockToken {
     {
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
 
-        locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity + _time;
+        locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(_time);
 
         emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
         return true;
@@ -126,7 +130,7 @@ contract cst is ERC20, Ownable, LockToken {
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
         transfer(address(this), _amount);
 
-        locked[msg.sender][_reason].amount = locked[msg.sender][_reason].amount + _amount;
+        locked[msg.sender][_reason].amount = locked[msg.sender][_reason].amount.add(_amount);
 
         emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
         return true;
@@ -146,12 +150,13 @@ contract cst is ERC20, Ownable, LockToken {
         public override onlyOwner
         returns (uint256 unlockableTokens)
     {
+        require(_of != address(0), NOT_ZERO_ADDRESS);
         uint256 lockedTokens;
-
+        
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
             lockedTokens = tokensUnlockable(_of, lockReason[_of][i]);
             if (lockedTokens > 0) {
-                unlockableTokens = unlockableTokens + lockedTokens;
+                unlockableTokens = unlockableTokens.add(lockedTokens);
                 locked[_of][lockReason[_of][i]].claimed = true;
                 emit Unlocked(_of, lockReason[_of][i], lockedTokens);
             }
@@ -167,7 +172,7 @@ contract cst is ERC20, Ownable, LockToken {
         returns (uint256 unlockableTokens)
     {
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
-            unlockableTokens = unlockableTokens + (tokensUnlockable(_of, lockReason[_of][i]));
+            unlockableTokens = unlockableTokens.add((tokensUnlockable(_of, lockReason[_of][i])));
         }  
     }
     
@@ -186,7 +191,7 @@ contract cst is ERC20, Ownable, LockToken {
 
     function burnFrom(address account, uint256 amount)
         public onlyOwner {
-            uint256 decreasedAllowance = allowance(account, _msgSender()) - amount;
+            uint256 decreasedAllowance = allowance(account, _msgSender()).sub(amount);
 
             _approve(account, _msgSender(), decreasedAllowance);
             _burn(account, amount);
