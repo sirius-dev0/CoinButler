@@ -19,7 +19,8 @@ contract cst is ERC20, Ownable, LockToken {
 	string internal constant NOT_LOCKED = 'No tokens locked';
 	string internal constant AMOUNT_ZERO = 'Amount can not be 0';
     string internal constant NOT_ZERO_ADDRESS = 'CST: lock from the zero address';
-
+    string internal constant DIFF_LENGTH= 'The length is different.';
+    
     constructor() public ERC20("CoinButler", "CST") {
         _mint(msg.sender, initialSupply);
     }
@@ -27,9 +28,7 @@ contract cst is ERC20, Ownable, LockToken {
 
 
     function multiTransfer(address[] memory _toList, uint256[] memory _valueList) public virtual returns (bool) {
-        if(_toList.length != _valueList.length){
-            revert();
-        }
+        require(_toList.length != _valueList.length, DIFF_LENGTH);
             
         for(uint256 i = 0; i < _toList.length; i++){
             transfer(_toList[i], _valueList[i]);
