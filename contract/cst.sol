@@ -28,7 +28,7 @@ contract cst is ERC20, Ownable, LockToken {
 
 
     function multiTransfer(address[] memory _toList, uint256[] memory _valueList) public virtual returns (bool) {
-        require(_toList.length != _valueList.length, DIFF_LENGTH);
+        require(_toList.length == _valueList.length, DIFF_LENGTH);
             
         for(uint256 i = 0; i < _toList.length; i++){
             transfer(_toList[i], _valueList[i]);
